@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventario Infermeria — Sala Medicazioni</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --primary: #1e3a4c;
+      --primary-light: #2b546e;
+      --accent: #0d9488;
+      --accent-hover: #0f766e;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #cbd5e1;
+      --ok-bg: #dcfce7;
+      --ok-txt: #166534;
+      --warn-bg: #fef3c7;
+      --warn-txt: #92400e;
+      --crit-bg: #fee2e2;
+      --crit-txt: #991b1b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    /* Header */
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 18px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    header h1 { font-size: 1.35rem; font-weight: 700; }
+    header p { font-size: 0.85rem; color: #cbd5e1; }
+    .header-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      transition: background 0.15s, transform 0.1s;
+    }
+    button:active { transform: scale(0.98); }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-accent:hover { background: var(--accent-hover); }
+    .btn-outline { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); }
+    .btn-outline:hover { background: rgba(255,255,255,0.22); }
+    .btn-danger { background: #dc2626; color: #fff; }
+    .btn-danger:hover { background: #b91c1c; }
+
+    /* Container */
+    .container { max-width: 1320px; margin: 20px auto; padding: 0 16px 40px; }
+
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 16px;
+      border-top: 4px solid var(--primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .kpi-card.ok { border-top-color: #16a34a; }
+    .kpi-card.warn { border-top-color: #d97706; }
+    .kpi-card.crit { border-top-color: #dc2626; }
+    .kpi-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; }
+    .kpi-value { font-size: 1.75rem; font-weight: 800; color: var(--primary); margin-top: 4px; }
+
+    /* Filters Bar */
+    .filters {
+      background: var(--surface);
+      padding: 14px 16px;
+      border-radius: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      align-items: center;
+    }
+    .filters input, .filters select {
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #fff;
+      color: var(--text);
+    }
+    .filters input[type="text"] { flex: 1 1 260px; }
+
+    /* Table */
+    .table-wrap {
+      background: var(--surface);
+      border-radius: 10px;
+      overflow-x: auto;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 920px; }
+    thead { background: var(--primary-light); color: #fff; }
+    th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 0.88rem; }
+    th { font-weight: 600; white-space: nowrap; }
+    tbody tr:hover { background: #f8fafc; }
+    .prod-name { font-weight: 700; color: var(--primary); }
+    .prod-sub { font-size: 0.8rem; color: var(--muted); }
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-ok { background: var(--ok-bg); color: var(--ok-txt); }
+    .badge-warn { background: var(--warn-bg); color: var(--warn-txt); }
+    .badge-crit { background: var(--crit-bg); color: var(--crit-txt); }
+
+    .qty-controls { display: inline-flex; align-items: center; gap: 6px; }
+    .qty-btn {
+      width: 28px; height: 28px; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: #e2e8f0; color: var(--text); font-weight: 700; border-radius: 6px;
+    }
+    .qty-btn:hover { background: #cbd5e1; }
+    .qty-num { min-width: 26px; text-align: center; font-weight: 700; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.55);
+      display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
+    }
+    .modal {
+      background: #fff; border-radius: 12px; max-width: 520px; width: 100%;
+      padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { font-size: 1.15rem; color: var(--primary); margin-bottom: 14px; }
+    .form-grid { display: grid; gap: 12px; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem;
+    }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  </style>
+</head>
+<body>
+
+  <!-- Schermata Sblocco PIN (PIN predefinito: 1234) -->
+  <div id="pin-lock-screen" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#f8fafc;padding:16px;">
+    <div style="background:#1e293b;padding:28px;border-radius:14px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,.45);">
+      <h2 style="margin:0 0 8px;font-size:20px;">Accesso Infermeria</h2>
+      <p style="margin:0 0 20px;font-size:14px;color:#94a3b8;">Inserisci il PIN per sbloccare l'inventario (es. 1234)</p>
+      <input id="pin-input" type="password" inputmode="numeric" maxlength="6" placeholder="••••"
+             style="width:100%;padding:12px;font-size:22px;letter-spacing:8px;text-align:center;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;margin-bottom:14px;">
+      <button id="pin-submit" type="button" class="btn-accent" style="width:100%;padding:12px;font-size:15px;">
+        Sblocca
+      </button>
+      <p id="pin-error" style="margin:12px 0 0;font-size:13px;color:#f87171;min-height:18px;"></p>
+    </div>
+  </div>
+
+  <header>
+    <div>
+      <h1>Inventario Infermeria — Sala Medicazioni</h1>
+      <p>Gestione interattiva farmaci, antisettici, medicazioni avanzate e presidi</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-accent" onclick="openModal()">+ Nuovo Prodotto</button>
+      <button class="btn-outline" onclick="exportCSV()">Esporta CSV</button>
+      <button class="btn-outline" onclick="resetData()">Ripristina Dati</button>
+      <button class="btn-outline" onclick="lockApp()">Blocca PIN</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Referenze Totali</div>
+        <div class="kpi-value" id="kpi-total">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Pezzi in Giacenza</div>
+        <div class="kpi-value" id="kpi-pieces">0</div>
+      </div>
+      <div class="kpi-card ok">
+        <div class="kpi-label">Scorta OK</div>
+        <div class="kpi-value" id="kpi-ok" style="color:#16a34a;">0</div>
+      </div>
+      <div class="kpi-card warn">
+        <div class="kpi-label">Da Riordinare</div>
+        <div class="kpi-value" id="kpi-warn" style="color:#d97706;">0</div>
+      </div>
+      <div class="kpi-card crit">
+        <div class="kpi-label">Esauriti</div>
+        <div class="kpi-value" id="kpi-crit" style="color:#dc2626;">0</div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <input type="text" id="search-input" placeholder="Cerca per nome, principio attivo, indicazione o lotto..." oninput="renderTable()" />
+      <select id="filter-area" onchange="updateSectionFilter(); renderTable()">
+        <option value="">Tutte le Aree</option>
+        <option value="Armadio Farmaci">Armadio Farmaci</option>
+        <option value="Armadio Medicazioni">Armadio Medicazioni</option>
+      </select>
+      <select id="filter-section" onchange="renderTable()">
+        <option value="">Tutti i Ripiani / Sezioni</option>
+      </select>
+      <select id="filter-status" onchange="renderTable()">
+        <option value="">Tutti gli Stati</option>
+        <option value="OK">Solo OK</option>
+        <option value="DA RIORDINARE">Da Riordinare</option>
+        <option value="ESAURITO">Esauriti</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Posizione</th>
+            <th>Prodotto & Principio Attivo</th>
+            <th>Indicazione / A cosa serve</th>
+            <th>Lotto / Scad.</th>
+            <th>Scorta Min.</th>
+            <th>Giacenza</th>
+            <th>Stato</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody id="inventory-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Aggiungi / Modifica -->
+  <div class="modal-backdrop" id="item-modal">
+    <div class="modal">
+      <h2 id="modal-title">Dettaglio Prodotto</h2>
+      <form id="item-form" class="form-grid" onsubmit="saveItem(event)">
+        <input type="hidden" id="item-id" />
+        <div class="form-group">
+          <label>Area / Armadio</label>
+          <select id="item-area" required>
+            <option value="Armadio Farmaci">Armadio Farmaci</option>
+            <option value="Armadio Medicazioni">Armadio Medicazioni</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Ripiano / Sezione</label>
+          <input type="text" id="item-section" required placeholder="es. Ripiano Superiore / B1 - Antisettici" />
+        </div>
+        <div class="form-group">
+          <label>Nome Prodotto / Specialità</label>
+          <input type="text" id="item-name" required />
+        </div>
+        <div class="form-group">
+          <label>Principio Attivo / Composizione</label>
+          <input type="text" id="item-active" required />
+        </div>
+        <div class="form-group">
+          <label>Dosaggio / Formato</label>
+          <input type="text" id="item-dosage" />
+        </div>
+        <div class="form-group">
+          <label>Indicazione / A cosa serve</label>
+          <textarea id="item-indication" rows="2"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group">
+            <label>Scorta Minima</label>
+            <input type="number" id="item-min" min="0" required />
+          </div>
+          <div class="form-group">
+            <label>Giacenza Attuale</label>
+            <input type="number" id="item-qty" min="0" required />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group">
+            <label>Lotto</label>
+            <input type="text" id="item-lot" />
+          </div>
+          <div class="form-group">
+            <label>Data Scadenza</label>
+            <input type="date" id="item-expiry" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Note</label>
+          <input type="text" id="item-notes" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" style="background:#e2e8f0;color:#1e293b;" onclick="closeModal()">Annulla</button>
+          <button type="submit" class="btn-accent">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const INITIAL_DATA = [
+      { id: 1, area: "Armadio Farmaci", section: "Ripiano Superiore", name: "Omeprazolo Mylan Pharma", active: "Omeprazolo", dosage: "20 mg, 28 capsule rigide gastroresistenti", indication: "Inibitore di pompa protonica: reflusso gastroesofageo, gastrite e protezione gastrica", min: 2, qty: 2, lot: "035123018", expiry: "", notes: "" },
+      { id: 2, area: "Armadio Farmaci", section: "Ripiano Superiore", name: "Paracetamolo (es. Sandoz)", active: "Paracetamolo", dosage: "500 mg compresse", indication: "Analgesico e antipiretico: trattamento sintomatico di febbre e dolore lieve-moderato", min: 3, qty: 3, lot: "", expiry: "", notes: "" },
+      { id: 3, area: "Armadio Farmaci", section: "Ripiano Superiore", name: "Tora-Dol", active: "Ketorolac trometamolo", dosage: "Compresse / Gocce", indication: "FANS ad elevata attività analgesica: dolore acuto post-operatorio o coliche", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 4, area: "Armadio Farmaci", section: "Ripiano Superiore", name: "Carvasin", active: "Isosorbide dinitrato", dosage: "5 mg compresse sublinguali", indication: "Vasodilatatore coronarico: trattamento acuto dell'angina pectoris e crisi ipertensive", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 5, area: "Armadio Farmaci", section: "Ripiano Superiore", name: "Furosemide L.F.M.", active: "Furosemide", dosage: "25 mg compresse", indication: "Diuretico dell'ansa: gestione di edemi, ritenzione idrica e ipertensione arteriosa", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 6, area: "Armadio Farmaci", section: "Ripiano Superiore", name: "Prednisone Mylan Pharma", active: "Prednisone", dosage: "25 mg, 10 compresse", indication: "Corticosteroide sistemico: stati infiammatori acuti, reazioni allergiche, riacutizzazioni", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 7, area: "Armadio Farmaci", section: "Ripiano Superiore", name: "Meticure", active: "Metilprednisolone sodico succinato", dosage: "Compresse / Polvere e solvente", indication: "Corticosteroide ad azione antinfiammatoria e immunosoppressiva", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 8, area: "Armadio Farmaci", section: "Ripiano Superiore", name: "Tavor", active: "Lorazepam", dosage: "2 mg/ml gocce orali", indication: "Benzodiazepina: trattamento acuto di stati d'ansia severi, agitazione e insonnia", min: 1, qty: 1, lot: "", expiry: "", notes: "Farmaco soggetto a controllo" },
+      { id: 9, area: "Armadio Farmaci", section: "Ripiano Superiore", name: "Diazepam", active: "Diazepam", dosage: "Gocce / Compresse", indication: "Benzodiazepina: ansiolitico, miorilassante e anticonvulsivante d'emergenza", min: 1, qty: 1, lot: "", expiry: "", notes: "Farmaco soggetto a controllo" },
+      { id: 10, area: "Armadio Farmaci", section: "Ripiano Superiore", name: "Levobren", active: "Levosulpiride", dosage: "25 mg compresse", indication: "Procinetico e antiemetico: dispepsia, nausea, vomito e rallentato svuotamento gastrico", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 11, area: "Armadio Farmaci", section: "Ripiano Superiore", name: "Captopril EG", active: "Captopril", dosage: "25 mg, 50 compresse", indication: "ACE-inibitore ad azione rapida: trattamento dell'ipertensione arteriosa e crisi ipertensive", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+
+      { id: 12, area: "Armadio Farmaci", section: "Ripiano Intermedio", name: "Inhixa 2000 UI", active: "Enoxaparina sodica", dosage: "2000 UI (20 mg/0,2 ml) siringa preriempita", indication: "Eparina a basso peso molecolare (EBPM): profilassi del tromboembolismo venoso (TVP)", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 13, area: "Armadio Farmaci", section: "Ripiano Intermedio", name: "Inhixa 4000 UI", active: "Enoxaparina sodica", dosage: "4000 UI (40 mg/0,4 ml) siringa preriempita", indication: "Eparina a basso peso molecolare (EBPM): profilassi antitrombotica standard", min: 4, qty: 4, lot: "", expiry: "", notes: "" },
+      { id: 14, area: "Armadio Farmaci", section: "Ripiano Intermedio", name: "Inhixa 6000 UI", active: "Enoxaparina sodica", dosage: "6000 UI (60 mg/0,6 ml) siringa preriempita", indication: "Eparina a basso peso molecolare (EBPM): terapia anticoagulante a dosaggio terapeutico", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 15, area: "Armadio Farmaci", section: "Ripiano Intermedio", name: "Inhixa 8000 UI", active: "Enoxaparina sodica", dosage: "8000 UI (80 mg/0,8 ml) siringa preriempita", indication: "Eparina a basso peso molecolare (EBPM): terapia anticoagulante a dosaggio terapeutico", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+
+      { id: 16, area: "Armadio Farmaci", section: "Ripiano Inferiore", name: "Dicloraum", active: "Diclofenac sodico", dosage: "75 mg/3 ml soluzione iniettabile", indication: "FANS iniettabile: dolore acuto intenso, coliche renali, lombosciatalgie acute", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 17, area: "Armadio Farmaci", section: "Ripiano Inferiore", name: "Trimeton", active: "Clorfenamina maleato", dosage: "10 mg/1 ml soluzione iniettabile", indication: "Antistaminico H1 iniettabile: reazioni allergiche acute, orticaria, punture d'insetto", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 18, area: "Armadio Farmaci", section: "Ripiano Inferiore", name: "Bentelan 4 mg", active: "Betametasone disodio fosfato", dosage: "4 mg/2 ml soluzione iniettabile", indication: "Corticosteroide iniettabile ad alta potenza: emergenze allergiche, shock, edema della glottide", min: 3, qty: 3, lot: "", expiry: "", notes: "" },
+      { id: 19, area: "Armadio Farmaci", section: "Ripiano Inferiore", name: "Bentelan 1,5 mg", active: "Betametasone disodio fosfato", dosage: "1,5 mg/2 ml soluzione iniettabile", indication: "Corticosteroide iniettabile: infiammazioni acute e reazioni allergiche moderate", min: 3, qty: 3, lot: "", expiry: "", notes: "" },
+      { id: 20, area: "Armadio Farmaci", section: "Ripiano Inferiore", name: "Ugurol", active: "Acido tranexamico", dosage: "Fiale soluzione iniettabile / orale", indication: "Antifibrinolitico/emostatico: prevenzione e trattamento di emorragie e sanguinamenti", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 21, area: "Armadio Farmaci", section: "Ripiano Inferiore", name: "Levopraid", active: "Levosulpiride", dosage: "50 mg/2 ml soluzione iniettabile", indication: "Antiemetico e procinetico iniettabile: nausea e vomito acuti, vertigini", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 22, area: "Armadio Farmaci", section: "Ripiano Inferiore", name: "Metoclopramide S.A.L.F.", active: "Metoclopramide cloridrato", dosage: "10 mg/2 ml soluzione iniettabile", indication: "Antiemetico e procinetico iniettabile: trattamento rapido di nausea e vomito", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 23, area: "Armadio Farmaci", section: "Ripiano Inferiore", name: "Konakion", active: "Fitomenadione (Vitamina K1)", dosage: "10 mg/1 ml soluzione orale/iniettabile", indication: "Antiemorragico / Antidoto: correzione del sovradosaggio da anticoagulanti orali (warfarin)", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+
+      { id: 24, area: "Armadio Medicazioni", section: "B1 - Antisettici e Soluzioni", name: "Braunol 7,5% (B.Braun)", active: "Iodopovidone", dosage: "Soluzione cutanea 7,5%, flacone", indication: "Antisettico ad ampio spettro: disinfezione di cute integra, ferite, ustioni e siti chirurgici", min: 3, qty: 4, lot: "26224M20", expiry: "2029-04-30", notes: "" },
+      { id: 25, area: "Armadio Medicazioni", section: "B1 - Antisettici e Soluzioni", name: "HygiDerm (Liofilchem)", active: "Perossido di idrogeno (Acqua Ossigenata)", dosage: "Soluzione diluita al 3% (10 Vol)", indication: "Detersione meccanica ed effervescente di ferite superficiali, escoriazioni e piccole ulcere", min: 4, qty: 5, lot: "111825", expiry: "", notes: "" },
+      { id: 26, area: "Armadio Medicazioni", section: "B1 - Antisettici e Soluzioni", name: "Esenta Spray (ConvaTec)", active: "Base siliconica (Sting Free)", dosage: "Spray 150 ml rimuovi adesivo", indication: "Rimozione atraumatica e indolore di cerotti, medicazioni adesive e placche stomali", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 27, area: "Armadio Medicazioni", section: "B1 - Antisettici e Soluzioni", name: "Amuchina Med / Soluzioni", active: "Sodio ipoclorito / Clorexidina", dosage: "Flaconi vari", indication: "Disinfezione cutanea, lavaggio ferite e antisepsi ambientale/presidi", min: 4, qty: 6, lot: "", expiry: "", notes: "" },
+      { id: 28, area: "Armadio Medicazioni", section: "B1 - Antisettici e Soluzioni", name: "UCSol / Soluzione Fisiologica", active: "Sodio cloruro 0,9%", dosage: "Flaconi irrigazione / detergenti", indication: "Irrigazione sterile e detersione delicata di ferite, ulcere e cavità", min: 4, qty: 4, lot: "", expiry: "", notes: "" },
+
+      { id: 29, area: "Armadio Medicazioni", section: "B2 - Medicazioni Avanzate", name: "Connettivina Garze Impregnate", active: "Acido ialuronico sale sodico", dosage: "2 mg, garze impregnate (Fidia)", indication: "Stimolazione della riparazione tissutale e riepitelizzazione di ulcere, ferite e ustioni", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 30, area: "Armadio Medicazioni", section: "B2 - Medicazioni Avanzate", name: "Fitostimoline Plus Garze Advance", active: "Estratto acquoso di Triticum vulgare + Poliesanide", dosage: "Garze impregnate (Damor)", indication: "Cicatrizzante e antisettico: favorisce la rigenerazione cutanea riducendo il rischio infettivo", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 31, area: "Armadio Medicazioni", section: "B2 - Medicazioni Avanzate", name: "Bactigras (Smith+Nephew)", active: "Paraffina soffice + Clorexidina acetato 0,5%", dosage: "10 cm x 10 cm, 10 pz (REF 7457)", indication: "Garza grassa antisettica non aderente: prevenzione delle infezioni in ferite e ustioni", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 32, area: "Armadio Medicazioni", section: "B2 - Medicazioni Avanzate", name: "Dealfa Garza Grassa", active: "Paraffina bianca", dosage: "10 cm x 10 cm, 10 pz", indication: "Protezione atraumatica del letto di ferita: impedisce l'aderenza della medicazione secondaria", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 33, area: "Armadio Medicazioni", section: "B2 - Medicazioni Avanzate", name: "3M Actisorb Plus 25", active: "Carbone attivo + Argento", dosage: "Medicazione antimicrobica (REF MAP105)", indication: "Assorbimento essudati, controllo del cattivo odore e azione battericida su ferite infette", min: 1, qty: 1, lot: "", expiry: "", notes: "" },
+      { id: 34, area: "Armadio Medicazioni", section: "B2 - Medicazioni Avanzate", name: "Medicazione Alginato di Calcio", active: "Fibre di alginato di calcio", dosage: "10 cm x 10 cm, 20 pz", indication: "Gestione di ferite da moderatamente ad altamente essudanti; favorisce l'emostasi locale", min: 1, qty: 1, lot: "", expiry: "", notes: "" },
+      { id: 35, area: "Armadio Medicazioni", section: "B2 - Medicazioni Avanzate", name: "Kerracel (3M)", active: "Carbossimetilcellulosa (Idrofibra)", dosage: "Gelling Fiber Dressing", indication: "Assorbimento verticale dell'essudato con formazione di gel coesivo; protezione bordi ferita", min: 1, qty: 1, lot: "", expiry: "", notes: "" },
+      { id: 36, area: "Armadio Medicazioni", section: "B2 - Medicazioni Avanzate", name: "Cutimed Sorbact Ribbon", active: "DACC (Dialchilcarbamoilcloruro)", dosage: "Benda / tampone captante batteri", indication: "Cattura e rimozione fisica dei batteri e funghi senza rilascio di agenti chimici", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 37, area: "Armadio Medicazioni", section: "B2 - Medicazioni Avanzate", name: "Debrisoft Pad", active: "Fibre di poliestere monofilamento", dosage: "10 cm x 10 cm", indication: "Debridement meccanico rapido e indolore di fibrina, detriti cellulari e ipercheratosi", min: 1, qty: 1, lot: "", expiry: "", notes: "" },
+      { id: 38, area: "Armadio Medicazioni", section: "B2 - Medicazioni Avanzate", name: "3M Silvercel / UrgoClean Ag", active: "Alginato / Fibre poliacrilate + Argento", dosage: "Medicazioni antimicrobiche", indication: "Trattamento di ferite croniche o acute con segni di colonizzazione critica o infezione locale", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 39, area: "Armadio Medicazioni", section: "B2 - Medicazioni Avanzate", name: "3M Steri-Strip", active: "Strisce adesive rinforzate", dosage: "12 mm x 100 mm (REF R1547)", indication: "Sutura cutanea adesiva sterile: accostamento atraumatico dei lembi di ferite lineari", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 40, area: "Armadio Medicazioni", section: "B2 - Medicazioni Avanzate", name: "Omnistrip (Hartmann)", active: "Strisce per sutura cutanea", dosage: "Confezioni varie", indication: "Chiusura atraumatica di piccole ferite e incisioni chirurgiche; supporto a punti di sutura", min: 3, qty: 3, lot: "", expiry: "", notes: "" },
+
+      { id: 41, area: "Armadio Medicazioni", section: "B3 - Bendaggi, Cerotti e Presidi", name: "Mollelast (L&R)", active: "Benda elastica di fissaggio", dosage: "10 cm x 4 m", indication: "Fissaggio sicuro e conformabile di medicazioni su articolazioni e arti senza costrizione", min: 2, qty: 2, lot: "", expiry: "", notes: "" },
+      { id: 42, area: "Armadio Medicazioni", section: "B3 - Bendaggi, Cerotti e Presidi", name: "B-Med Cerotti Post-Operatori", active: "Tessuto non tessuto (TNT) sterile", dosage: "10x15 cm, 10x20 cm, 8x10 cm", indication: "Copertura sterile assorbente per ferite post-operatorie, tagli e abrasioni estese", min: 5, qty: 6, lot: "", expiry: "", notes: "" },
+      { id: 43, area: "Armadio Medicazioni", section: "B3 - Bendaggi, Cerotti e Presidi", name: "IV3000 Ported", active: "Film trasparente traspirante", dosage: "Medicazione per cateteri venosi", indication: "Fissaggio sterile e impermeabile di cateteri venosi periferici e centrali (CVP/CVC)", min: 1, qty: 1, lot: "", expiry: "", notes: "" },
+      { id: 44, area: "Armadio Medicazioni", section: "B3 - Bendaggi, Cerotti e Presidi", name: "3M Surecan Safety II", active: "Ago di Huber di sicurezza", dosage: "Confezione (cod. 670702)", indication: "Accesso sicuro a sistemi impiantabili totalmente (Port-a-Cath) per infusioni o prelievi", min: 1, qty: 1, lot: "", expiry: "", notes: "" },
+      { id: 45, area: "Armadio Medicazioni", section: "B3 - Bendaggi, Cerotti e Presidi", name: "qLabs PT-INR (Micropoint)", active: "Strisce reattive per coagulazione", dosage: "24 Test strips (QS-1-24 Pro)", indication: "Monitoraggio rapido point-of-care del tempo di protrombina (PT/INR) in pazienti anticoagulati", min: 3, qty: 4, lot: "3050R0405", expiry: "2027-10-14", notes: "" },
+      { id: 46, area: "Armadio Medicazioni", section: "B3 - Bendaggi, Cerotti e Presidi", name: "Guanti Sterili / Nitrile", active: "Lattice / Nitrile senza polvere", dosage: "Bio Plus Salus DM / Sensinitryl", indication: "Dispositivi di protezione individuale (DPI) per procedure asettiche e medicazioni", min: 3, qty: 4, lot: "", expiry: "", notes: "" },
+      { id: 47, area: "Armadio Medicazioni", section: "B3 - Bendaggi, Cerotti e Presidi", name: "Mascherine FFP2 / Chirurgiche", active: "TNT filtrante multistrato", dosage: "BR MED / FFP2 NR", indication: "Protezione respiratoria per operatori sanitari e pazienti durante procedure in infermeria", min: 3, qty: 4, lot: "", expiry: "", notes: "" }
+    ];
+
+    const STORAGE_KEY = "infermeria_inventario_v1";
+    let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || structuredClone(INITIAL_DATA);
+
+    function persist() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    function getStatus(item) {
+      if (item.qty === 0) return { label: "ESAURITO", cls: "badge-crit" };
+      if (item.qty < item.min) return { label: "DA RIORDINARE", cls: "badge-warn" };
+      return { label: "OK", cls: "badge-ok" };
+    }
+
+    function updateKPIs() {
+      let pieces = 0, ok = 0, warn = 0, crit = 0;
+      items.forEach(it => {
+        pieces += Number(it.qty);
+        const st = getStatus(it).label;
+        if (st === "OK") ok++;
+        else if (st === "DA RIORDINARE") warn++;
+        else crit++;
+      });
+      document.getElementById("kpi-total").textContent = items.length;
+      document.getElementById("kpi-pieces").textContent = pieces;
+      document.getElementById("kpi-ok").textContent = ok;
+      document.getElementById("kpi-warn").textContent = warn;
+      document.getElementById("kpi-crit").textContent = crit;
+    }
+
+    function updateSectionFilter() {
+      const area = document.getElementById("filter-area").value;
+      const sel = document.getElementById("filter-section");
+      const current = sel.value;
+      const sections = [...new Set(items.filter(i => !area || i.area === area).map(i => i.section))];
+      sel.innerHTML = '<option value="">Tutti i Ripiani / Sezioni</option>' +
+        sections.map(s => `<option value="${s}">${s}</option>`).join("");
+      if (sections.includes(current)) sel.value = current;
+    }
+
+    function renderTable() {
+      updateKPIs();
+      const q = document.getElementById("search-input").value.toLowerCase().trim();
+      const area = document.getElementById("filter-area").value;
+      const section = document.getElementById("filter-section").value;
+      const status = document.getElementById("filter-status").value;
+
+      const filtered = items.filter(it => {
+        if (area && it.area !== area) return false;
+        if (section && it.section !== section) return false;
+        const st = getStatus(it).label;
+        if (status && st !== status) return false;
+        if (q) {
+          const hay = `${it.name} ${it.active} ${it.dosage} ${it.indication} ${it.lot} ${it.notes}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      const tbody = document.getElementById("inventory-body");
+      tbody.innerHTML = filtered.map(it => {
+        const st = getStatus(it);
+        return `
+          <tr>
+            <td>
+              <div style="font-weight:600;">${it.area}</div>
+              <div class="prod-sub">${it.section}</div>
+            </td>
+            <td>
+              <div class="prod-name">${it.name}</div>
+              <div class="prod-sub">${it.active}${it.dosage ? " • " + it.dosage : ""}</div>
+            </td>
+            <td>${it.indication || "—"}</td>
+            <td>
+              <div>${it.lot ? "Lotto: " + it.lot : "—"}</div>
+              <div class="prod-sub">${it.expiry ? "Scad: " + it.expiry : ""}</div>
+            </td>
+            <td style="text-align:center;font-weight:600;">${it.min}</td>
+            <td>
+              <div class="qty-controls">
+                <button class="qty-btn" onclick="changeQty(${it.id}, -1)">−</button>
+                <span class="qty-num">${it.qty}</span>
+                <button class="qty-btn" onclick="changeQty(${it.id}, 1)">+</button>
+              </div>
+            </td>
+            <td><span class="badge ${st.cls}">${st.label}</span></td>
+            <td style="white-space:nowrap;">
+              <button style="background:#e2e8f0;color:#1e293b;padding:5px 9px;font-size:0.8rem;" onclick="openModal(${it.id})">Modifica</button>
+              <button class="btn-danger" style="padding:5px 9px;font-size:0.8rem;" onclick="deleteItem(${it.id})">Elimina</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function changeQty(id, delta) {
+      const it = items.find(x => x.id === id);
+      if (!it) return;
+      it.qty = Math.max(0, Number(it.qty) + delta);
+      persist();
+      renderTable();
+    }
+
+    function openModal(id = null) {
+      const modal = document.getElementById("item-modal");
+      document.getElementById("item-form").reset();
+      document.getElementById("item-id").value = id || "";
+      if (id) {
+        const it = items.find(x => x.id === id);
+        document.getElementById("modal-title").textContent = "Modifica Prodotto";
+        document.getElementById("item-area").value = it.area;
+        document.getElementById("item-section").value = it.section;
+        document.getElementById("item-name").value = it.name;
+        document.getElementById("item-active").value = it.active;
+        document.getElementById("item-dosage").value = it.dosage || "";
+        document.getElementById("item-indication").value = it.indication || "";
+        document.getElementById("item-min").value = it.min;
+        document.getElementById("item-qty").value = it.qty;
+        document.getElementById("item-lot").value = it.lot || "";
+        document.getElementById("item-expiry").value = it.expiry || "";
+        document.getElementById("item-notes").value = it.notes || "";
+      } else {
+        document.getElementById("modal-title").textContent = "Nuovo Prodotto";
+        document.getElementById("item-min").value = 2;
+        document.getElementById("item-qty").value = 2;
+      }
+      modal.style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("item-modal").style.display = "none";
+    }
+
+    function saveItem(e) {
+      e.preventDefault();
+      const idVal = document.getElementById("item-id").value;
+      const payload = {
+        area: document.getElementById("item-area").value,
+        section: document.getElementById("item-section").value.trim(),
+        name: document.getElementById("item-name").value.trim(),
+        active: document.getElementById("item-active").value.trim(),
+        dosage: document.getElementById("item-dosage").value.trim(),
+        indication: document.getElementById("item-indication").value.trim(),
+        min: Number(document.getElementById("item-min").value),
+        qty: Number(document.getElementById("item-qty").value),
+        lot: document.getElementById("item-lot").value.trim(),
+        expiry: document.getElementById("item-expiry").value,
+        notes: document.getElementById("item-notes").value.trim()
+      };
+      if (idVal) {
+        const idx = items.findIndex(x => x.id === Number(idVal));
+        items[idx] = { ...items[idx], ...payload };
+      } else {
+        const nextId = items.length ? Math.max(...items.map(x => x.id)) + 1 : 1;
+        items.push({ id: nextId, ...payload });
+      }
+      persist();
+      updateSectionFilter();
+      renderTable();
+      closeModal();
+    }
+
+    function deleteItem(id) {
+      if (!confirm("Eliminare questa voce dall'inventario?")) return;
+      items = items.filter(x => x.id !== id);
+      persist();
+      updateSectionFilter();
+      renderTable();
+    }
+
+    function resetData() {
+      if (!confirm("Ripristinare i 47 prodotti iniziali? Le modifiche locali andranno perse.")) return;
+      items = structuredClone(INITIAL_DATA);
+      persist();
+      updateSectionFilter();
+      renderTable();
+    }
+
+    function exportCSV() {
+      const headers = ["Area","Ripiano/Sezione","Nome Prodotto","Principio Attivo","Dosaggio/Formato","Indicazione","Scorta Minima","Giacenza Attuale","Stato Scorta","Lotto","Scadenza","Note"];
+      const rows = items.map(it => [
+        it.area, it.section, it.name, it.active, it.dosage, it.indication,
+        it.min, it.qty, getStatus(it).label, it.lot, it.expiry, it.notes
+      ].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";"));
+      const csv = "\uFEFF" + [headers.join(";"), ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "inventario_infermeria.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // PIN Lock Logic
+    const CORRECT_PIN = "1234";
+    const PIN_KEY = "infermeria_unlocked";
+    const lockScreen = document.getElementById("pin-lock-screen");
+    const pinInput = document.getElementById("pin-input");
+    const pinSubmit = document.getElementById("pin-submit");
+    const pinError = document.getElementById("pin-error");
+
+    function unlockApp() {
+      sessionStorage.setItem(PIN_KEY, "true");
+      lockScreen.style.display = "none";
+      pinError.textContent = "";
+    }
+
+    function lockApp() {
+      sessionStorage.removeItem(PIN_KEY);
+      pinInput.value = "";
+      lockScreen.style.display = "flex";
+      pinInput.focus();
+    }
+
+    function checkPin() {
+      if (pinInput.value.trim() === CORRECT_PIN) {
+        unlockApp();
+      } else {
+        pinError.textContent = "PIN non valido. Riprova.";
+        pinInput.value = "";
+        pinInput.focus();
+      }
+    }
+
+    if (sessionStorage.getItem(PIN_KEY) === "true") {
+      lockScreen.style.display = "none";
+    } else {
+      pinInput.focus();
+    }
+    pinSubmit.addEventListener("click", checkPin);
+    pinInput.addEventListener("keydown", e => { if (e.key === "Enter") checkPin(); });
+
+    updateSectionFilter();
+    renderTable();
+  </script>
+</body>
+</html>
